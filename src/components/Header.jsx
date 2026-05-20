@@ -30,7 +30,7 @@ export default function Header() {
         boxShadow: scrolled ? '0 4px 24px rgba(44,74,110,.12)' : 'none',
         transition: 'all .3s',
       }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 1.5rem', height: 80, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 1.5rem', height: 96, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
 
           <a href="#hero" onClick={e => { e.preventDefault(); scrollTo('hero') }} style={{ display: 'flex', alignItems: 'center', gap: '.75rem', textDecoration: 'none', transition: 'transform .2s' }}
             onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.04)'}
@@ -40,7 +40,7 @@ export default function Header() {
             <img
               src={logoUrl || "/logo.png"}
               alt="Cristalumex"
-              style={{ height: 80, width: 'auto', objectFit: 'contain' }}
+              style={{ height: 96, width: 'auto', objectFit: 'contain' }}
             />
 
           </a>
