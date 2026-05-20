@@ -40,7 +40,7 @@ export default function Header() {
             <img
               src={logoUrl || "/logo.png"}
               alt="Cristalumex"
-              style={{ height: 64, width: 'auto', objectFit: 'contain' }}
+              style={{ height: 80, width: 'auto', objectFit: 'contain' }}
             />
 
           </a>
