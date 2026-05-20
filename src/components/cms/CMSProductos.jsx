@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useSite } from '../../lib/context'
 import { Card, Field, Input, Textarea, Row, SaveButton, AddButton, DangerButton } from './CMSFields'
@@ -10,24 +10,35 @@ export default function CMSProductos() {
   const [loading, setLoading] = useState(false)
   const setSec = (key) => (val) => setSecData(d => ({ ...d, [key]: val }))
 
+  // Sincroniza el estado local cuando el hook recibe datos frescos de Supabase
+  useEffect(() => {
+    setLocalProducts(products)
+  }, [products])
+
   const updateProduct = (id, key, val) => {
     setLocalProducts(ps => ps.map(p => p.id === id ? { ...p, [key]: val } : p))
   }
 
   const handleAdd = () => {
-    const newP = { id: Date.now(), title: 'Nuevo Producto', desc: 'Descripción del producto.' }
+    // IDs temporales como string para distinguirlos de los IDs numéricos de Supabase
+    const tempId = `new-${Date.now()}`
+    const newP = { id: tempId, title: 'Nuevo Producto', desc: 'Descripción del producto.' }
     setLocalProducts(ps => [...ps, newP])
   }
 
   const handleDelete = async (id) => {
     setLocalProducts(ps => ps.filter(p => p.id !== id))
-    await deleteProduct(id)
+    // Solo eliminamos de Supabase si es un ID real (numérico)
+    if (typeof id !== 'string') {
+      await deleteProduct(id)
+    }
   }
 
   const handleSave = async () => {
     setLoading(true)
     try {
       await saveSiteData({ productos: secData })
+      // saveProducts devuelve la lista con IDs reales asignados por Supabase
       await saveProducts(localProducts)
       toast.success('Productos guardados correctamente')
     } catch {

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useSite } from '../../lib/context'
 import { Card, Field, Input, Textarea, Row, SaveButton, AddButton, DangerButton } from './CMSFields'
@@ -13,16 +13,25 @@ export default function CMSGaleria() {
   const [loading, setLoading] = useState(false)
   const setSec = (key) => (val) => setSecData(d => ({ ...d, [key]: val }))
 
+  // Sincroniza el estado local cuando el hook recibe datos frescos de Supabase
+  useEffect(() => {
+    setLocalGallery(gallery)
+  }, [gallery])
+
   const handleAdd = () => {
     if (!newUrl.trim()) return toast.error('Ingresa la URL de la imagen')
-    const img = { id: Date.now(), url: newUrl.trim(), cat: newCat, alt: newAlt || 'Proyecto Cristalumex' }
+    const tempId = `new-${Date.now()}`
+    const img = { id: tempId, url: newUrl.trim(), cat: newCat, alt: newAlt || 'Proyecto Cristalumex' }
     setLocalGallery(g => [...g, img])
     setNewUrl(''); setNewAlt('')
   }
 
   const handleDelete = async (id) => {
     setLocalGallery(g => g.filter(i => i.id !== id))
-    await deleteGalleryItem(id)
+    // Solo eliminamos de Supabase si es un ID real (numérico)
+    if (typeof id !== 'string') {
+      await deleteGalleryItem(id)
+    }
   }
 
   const handleSave = async () => {

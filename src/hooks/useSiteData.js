@@ -25,10 +25,10 @@ export function useSiteData() {
         setSiteData(DEFAULT_SITE_DATA)
       }
 
-      // 🔥 LISTAS SEGURAS
-      setProducts(prRes.data || [])
-      setGallery(gaRes.data || [])
-      setTestimonials(teRes.data || [])
+      // 🔥 LISTAS SEGURAS: usa defaults si Supabase devuelve vacío
+      setProducts(prRes.data?.length ? prRes.data : DEFAULT_PRODUCTS)
+      setGallery(gaRes.data?.length ? gaRes.data : DEFAULT_GALLERY)
+      setTestimonials(teRes.data?.length ? teRes.data : DEFAULT_TESTIMONIALS)
 
     } catch (err) {
       console.error('Supabase error:', err)
@@ -66,46 +66,67 @@ export function useSiteData() {
     if (error) console.error('saveSiteData error:', error)
   }
 
-  const saveProducts = async (newProducts) => {
-    setProducts(newProducts)
+  // Guarda una lista en Supabase: INSERT para items nuevos (id temporal string),
+  // UPDATE para items existentes (id numérico real de Supabase).
+  // Devuelve la lista con los IDs reales asignados por Supabase.
+  const _saveList = async (table, items, fields) => {
+    const result = []
 
-    for (let i = 0; i < newProducts.length; i++) {
-      const p = { ...newProducts[i], sort_order: i }
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      const isNew = typeof item.id === 'string' // IDs temporales son strings ('new-...')
 
-      const { error } = await supabase
-        .from('products')
-        .upsert(p)
+      if (isNew) {
+        // INSERT: no enviamos id, Supabase asigna BIGSERIAL
+        const payload = {}
+        fields.forEach(f => { if (item[f] !== undefined) payload[f] = item[f] })
+        payload.sort_order = i
 
-      if (error) console.error('saveProducts error:', error)
+        const { data, error } = await supabase
+          .from(table)
+          .insert(payload)
+          .select()
+          .single()
+
+        if (error) console.error(`${table} INSERT error:`, error)
+        else result.push(data)
+      } else {
+        // UPDATE: el id es numérico real de Supabase
+        const payload = {}
+        fields.forEach(f => { if (item[f] !== undefined) payload[f] = item[f] })
+        payload.sort_order = i
+
+        const { data, error } = await supabase
+          .from(table)
+          .update(payload)
+          .eq('id', item.id)
+          .select()
+          .single()
+
+        if (error) console.error(`${table} UPDATE error:`, error)
+        else result.push(data)
+      }
     }
+
+    return result
+  }
+
+  const saveProducts = async (newProducts) => {
+    const saved = await _saveList('products', newProducts, ['title', 'desc'])
+    setProducts(saved)
+    return saved
   }
 
   const saveGallery = async (newGallery) => {
-    setGallery(newGallery)
-
-    for (let i = 0; i < newGallery.length; i++) {
-      const g = { ...newGallery[i], sort_order: i }
-
-      const { error } = await supabase
-        .from('gallery')
-        .upsert(g)
-
-      if (error) console.error('saveGallery error:', error)
-    }
+    const saved = await _saveList('gallery', newGallery, ['url', 'cat', 'alt'])
+    setGallery(saved)
+    return saved
   }
 
   const saveTestimonials = async (newTestimonials) => {
-    setTestimonials(newTestimonials)
-
-    for (let i = 0; i < newTestimonials.length; i++) {
-      const t = { ...newTestimonials[i], sort_order: i }
-
-      const { error } = await supabase
-        .from('testimonials')
-        .upsert(t)
-
-      if (error) console.error('saveTestimonials error:', error)
-    }
+    const saved = await _saveList('testimonials', newTestimonials, ['name', 'role', 'text'])
+    setTestimonials(saved)
+    return saved
   }
 
   const deleteProduct = async (id) => {

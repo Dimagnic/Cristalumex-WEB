@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useSite } from '../../lib/context'
 import { Card, Field, Input, Textarea, Row, SaveButton, AddButton, DangerButton } from './CMSFields'
@@ -10,15 +10,24 @@ export default function CMSTestimonios() {
   const [loading, setLoading] = useState(false)
   const setSec = (key) => (val) => setSecData(d => ({ ...d, [key]: val }))
 
+  // Sincroniza el estado local cuando el hook recibe datos frescos de Supabase
+  useEffect(() => {
+    setLocal(testimonials)
+  }, [testimonials])
+
   const update = (id, key, val) => setLocal(ts => ts.map(t => t.id === id ? { ...t, [key]: val } : t))
 
   const handleAdd = () => {
-    setLocal(ts => [...ts, { id: Date.now(), name: 'Nuevo Cliente', role: '', text: 'Excelente servicio.' }])
+    const tempId = `new-${Date.now()}`
+    setLocal(ts => [...ts, { id: tempId, name: 'Nuevo Cliente', role: '', text: 'Excelente servicio.' }])
   }
 
   const handleDelete = async (id) => {
     setLocal(ts => ts.filter(t => t.id !== id))
-    await deleteTestimonial(id)
+    // Solo eliminamos de Supabase si es un ID real (numérico)
+    if (typeof id !== 'string') {
+      await deleteTestimonial(id)
+    }
   }
 
   const handleSave = async () => {
