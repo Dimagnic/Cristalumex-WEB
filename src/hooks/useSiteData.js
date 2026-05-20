@@ -12,18 +12,30 @@ export function useSiteData() {
   const fetchAll = useCallback(async () => {
     try {
       const [sdRes, prRes, gaRes, teRes] = await Promise.all([
-        supabase.from('site_data').select('*').eq('id', 1).single(),
+        supabase.from('site_data').select('*').eq('id', 1).maybeSingle(),
         supabase.from('products').select('*').order('sort_order'),
         supabase.from('gallery').select('*').order('sort_order'),
         supabase.from('testimonials').select('*').order('sort_order'),
       ])
 
-      if (sdRes.data) setSiteData({ ...DEFAULT_SITE_DATA, ...sdRes.data.content })
-      if (prRes.data && prRes.data.length > 0) setProducts(prRes.data)
-      if (gaRes.data && gaRes.data.length > 0) setGallery(gaRes.data)
-      if (teRes.data && teRes.data.length > 0) setTestimonials(teRes.data)
+      // 🔥 SITE DATA FIX (NO sobrescribe con undefined)
+      if (sdRes.data?.content) {
+        setSiteData({ ...DEFAULT_SITE_DATA, ...sdRes.data.content })
+      } else {
+        setSiteData(DEFAULT_SITE_DATA)
+      }
+
+      // 🔥 LISTAS SEGURAS
+      setProducts(prRes.data || [])
+      setGallery(gaRes.data || [])
+      setTestimonials(teRes.data || [])
+
     } catch (err) {
-      console.warn('Using default data (Supabase not configured):', err.message)
+      console.error('Supabase error:', err)
+      setSiteData(DEFAULT_SITE_DATA)
+      setProducts(DEFAULT_PRODUCTS)
+      setGallery(DEFAULT_GALLERY)
+      setTestimonials(DEFAULT_TESTIMONIALS)
     } finally {
       setLoading(false)
     }
@@ -32,7 +44,6 @@ export function useSiteData() {
   useEffect(() => {
     fetchAll()
 
-    // Real-time subscription for live updates
     const channel = supabase
       .channel('site-updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'site_data' }, fetchAll)
@@ -47,70 +58,107 @@ export function useSiteData() {
   const saveSiteData = async (newData) => {
     const merged = { ...siteData, ...newData }
     setSiteData(merged)
-    await supabase.from('site_data').upsert({ id: 1, content: merged })
+
+    const { error } = await supabase
+      .from('site_data')
+      .upsert({ id: 1, content: merged })
+
+    if (error) console.error('saveSiteData error:', error)
   }
 
   const saveProducts = async (newProducts) => {
     setProducts(newProducts)
+
     for (let i = 0; i < newProducts.length; i++) {
       const p = { ...newProducts[i], sort_order: i }
-      if (typeof p.id === 'number' && p.id < 1000000000000) {
-        await supabase.from('products').upsert(p)
-      } else {
-        const { id, ...rest } = p
-        await supabase.from('products').insert({ ...rest })
-      }
+
+      const { error } = await supabase
+        .from('products')
+        .upsert(p)
+
+      if (error) console.error('saveProducts error:', error)
     }
   }
 
   const saveGallery = async (newGallery) => {
     setGallery(newGallery)
+
     for (let i = 0; i < newGallery.length; i++) {
       const g = { ...newGallery[i], sort_order: i }
-      if (typeof g.id === 'number' && g.id < 1000000000000) {
-        await supabase.from('gallery').upsert(g)
-      } else {
-        const { id, ...rest } = g
-        await supabase.from('gallery').insert({ ...rest })
-      }
+
+      const { error } = await supabase
+        .from('gallery')
+        .upsert(g)
+
+      if (error) console.error('saveGallery error:', error)
     }
   }
 
   const saveTestimonials = async (newTestimonials) => {
     setTestimonials(newTestimonials)
+
     for (let i = 0; i < newTestimonials.length; i++) {
       const t = { ...newTestimonials[i], sort_order: i }
-      if (typeof t.id === 'number' && t.id < 1000000000000) {
-        await supabase.from('testimonials').upsert(t)
-      } else {
-        const { id, ...rest } = t
-        await supabase.from('testimonials').insert({ ...rest })
-      }
+
+      const { error } = await supabase
+        .from('testimonials')
+        .upsert(t)
+
+      if (error) console.error('saveTestimonials error:', error)
     }
   }
 
   const deleteProduct = async (id) => {
     const updated = products.filter(p => p.id !== id)
     setProducts(updated)
-    await supabase.from('products').delete().eq('id', id)
+
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id)
+
+    if (error) console.error(error)
   }
 
   const deleteGalleryItem = async (id) => {
     const updated = gallery.filter(g => g.id !== id)
     setGallery(updated)
-    await supabase.from('gallery').delete().eq('id', id)
+
+    const { error } = await supabase
+      .from('gallery')
+      .delete()
+      .eq('id', id)
+
+    if (error) console.error(error)
   }
 
   const deleteTestimonial = async (id) => {
     const updated = testimonials.filter(t => t.id !== id)
     setTestimonials(updated)
-    await supabase.from('testimonials').delete().eq('id', id)
+
+    const { error } = await supabase
+      .from('testimonials')
+      .delete()
+      .eq('id', id)
+
+    if (error) console.error(error)
   }
 
   return {
-    siteData, products, gallery, testimonials, loading,
-    saveSiteData, saveProducts, saveGallery, saveTestimonials,
-    deleteProduct, deleteGalleryItem, deleteTestimonial,
-    setProducts, setGallery, setTestimonials,
+    siteData,
+    products,
+    gallery,
+    testimonials,
+    loading,
+    saveSiteData,
+    saveProducts,
+    saveGallery,
+    saveTestimonials,
+    deleteProduct,
+    deleteGalleryItem,
+    deleteTestimonial,
+    setProducts,
+    setGallery,
+    setTestimonials,
   }
 }
