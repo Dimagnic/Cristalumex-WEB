@@ -31,10 +31,18 @@ export default function Header() {
         transition: 'all .3s',
       }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 1.5rem', height: 80, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+
           <a href="#hero" onClick={e => { e.preventDefault(); scrollTo('hero') }} style={{ display: 'flex', alignItems: 'center', gap: '.75rem', textDecoration: 'none', transition: 'transform .2s' }}
             onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.04)'}
             onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
-            {logoUrl && <img src={logoUrl} alt="Cristalumex" style={{ height: 48, width: 'auto', objectFit: 'contain' }} />}
+            
+            {/* 🔥 LOGO CORREGIDO */}
+            <img
+              src={logoUrl || "/logo.png"}
+              alt="Cristalumex"
+              style={{ height: 48, width: 'auto', objectFit: 'contain' }}
+            />
+
           </a>
 
           <nav style={{ display: 'flex', alignItems: 'center', gap: '.25rem' }} className="desktop-nav">
@@ -62,7 +70,6 @@ export default function Header() {
             </button>
           </nav>
 
-          {/* Mobile hamburger */}
           <button onClick={() => setMobileOpen(!mobileOpen)} className="mobile-menu-btn" style={{
             display: 'none', flexDirection: 'column', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: 4,
           }}>
@@ -73,7 +80,6 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Mobile nav */}
       {mobileOpen && (
         <div style={{
           position: 'fixed', inset: '80px 0 0', background: 'rgba(255,255,255,.98)',
@@ -84,7 +90,7 @@ export default function Header() {
             <button key={key} onClick={() => scrollTo(id)} style={{
               fontFamily: 'Montserrat, sans-serif', fontSize: '1.1rem', fontWeight: 600,
               color: 'var(--text)', background: 'none', border: 'none', padding: '.75rem 1rem',
-              borderRadius: 'var(--radius)', cursor: 'pointer', textAlign: 'left', transition: 'all .2s',
+              borderRadius: 'var(--radius)', cursor: 'pointer', textAlign: 'left',
             }}>
               {nav[key] || key}
             </button>
